@@ -38,8 +38,7 @@ router.get("/:ts", function (req, res, next) {
     if (result.length ===0 )
     return res
       .status(404)
-      .send("The content with the given ts was not found.");
-  
+      .send("The content with the given ts was not found.");  
     console.log(result);
     res.send(result);
   });
