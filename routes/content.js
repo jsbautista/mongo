@@ -1,48 +1,39 @@
 const express = require("express");
 const router = express.Router();
-const Content = require("../models/content");
+const content = require("../controllers/content");
 const Joi = require("joi");
 
-
-
-
 router.get("/", function (req, res, next) {
-  console.log("Aca");
-  Content.findAll().then((result) => {
-    res.send(result);
+  content.getContents((contents) => {
+    res.send(contents);
   });
 });
 
+router.get("/:ts", function (req, res, next) {
+  content.getContent(parseInt(req.params.ts), (content) => {
+    if (!content)
+      return res
+        .status(404)
+        .send("The content with the given ts was not found.");
+    res.send(content);
+  });
+});
 
 router.post("/", function (req, res, next) {
   const { error } = validateContent(req.body);
   if (error) {
     return res.status(400).send(error);
   }
-
-  Content.create({ name: req.body.name, message: req.body.message, ts: new Date().getTime(),}).then(
-    (response) => {
-    console.log(response);
-    res.send(response);
-  });
+  const newContent ={
+    name: req.body.name,
+    message: req.body.message,
+    ts: new Date().getTime(),
+  };
+  content.addContent(newContent);
+  res.send(newContent); 
 });
 
 
-router.get("/:ts", function (req, res, next) {
-  Content.findAll({
-    where: {
-      ts: req.params.ts
-    }
-  }).then((result) => {
-    console.log(result);
-    if (result.length ===0 )
-    return res
-      .status(404)
-      .send("The content with the given ts was not found.");  
-    console.log(result);
-    res.send(result);
-  });
-});
 
 router.put("/:ts", (req, res) => {
   const { error } = validateContent(req.body);
@@ -50,24 +41,25 @@ router.put("/:ts", (req, res) => {
   if (error) {
     return res.status(400).send(error);
   }
-
-  Content.update(req.body, { where: { ts: req.params.ts } }).then(
-    (response) => {
-      if (response[0] !== 0) res.send({ message: "Content updated" });
+  const newContent ={
+    name: req.body.name,
+    message: req.body.message
+  };
+  content.updateContent(parseInt(req.params.ts), newContent,(content) => {
+    if (content.modifiedCount !== 0) res.send({ message: "Content updated" });
       else res.status(404).send({ message: "Content was not found" });
-    }
-  );
+  });
+
+
 });
 
 router.delete("/:ts", (req, res) => {
-  Content.destroy({
-    where: {
-      ts: req.params.ts,
-    },
-  }).then((response) => {
-    if (response === 1) res.status(204).send();
+  content.deleteContent(parseInt(req.params.ts),(content) => {
+    console.log(content);
+    if (content.deletedCount === 1) res.status(204).send();
     else res.status(404).send({ message: "Content was not found" });
   });
+ 
 });
 
 const validateContent = (content) => {
@@ -80,4 +72,3 @@ const validateContent = (content) => {
 };
 
 module.exports = router;
- 
